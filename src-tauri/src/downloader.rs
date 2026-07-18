@@ -109,9 +109,9 @@ async fn download_one(client: &Client, req: &DownloadReq, folder: &Path) -> Save
     };
     let id_part = sanitize(&req.id);
     let file_name = if id_part.is_empty() {
-        format!("{base}-{}.{ext}", &req.source)
+        format!("{base}-{}.{ext}", req.source)
     } else {
-        format!("{base}-{}-{id_part}.{ext}", &req.source)
+        format!("{base}-{}-{id_part}.{ext}", req.source)
     };
     let path: PathBuf = folder.join(file_name);
 

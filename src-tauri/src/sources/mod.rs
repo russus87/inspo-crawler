@@ -3,8 +3,10 @@ use async_trait::async_trait;
 use reqwest::Client;
 
 pub mod arena;
+pub mod awwwards;
 pub mod behance;
 pub mod dribbble;
+pub mod lexica;
 pub mod pinterest;
 pub mod unsplash;
 
@@ -28,8 +30,10 @@ pub fn all() -> Vec<Box<dyn Source>> {
         Box::new(pinterest::Pinterest),
         Box::new(dribbble::Dribbble),
         Box::new(behance::Behance),
+        Box::new(awwwards::Awwwards),
         Box::new(unsplash::Unsplash),
         Box::new(arena::Arena),
+        Box::new(lexica::Lexica),
     ]
 }
 

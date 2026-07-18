@@ -17,8 +17,10 @@ is plain HTML/CSS/JS — no bundler, no Node required to build.
 | **Pinterest** | internal search resource (no login)     | good        |
 | **Unsplash**  | internal `napi` search (no API key)     | good        |
 | **Are.na**    | public v2 API                           | good        |
+| **Lexica**    | public search API (AI imagery)          | good        |
 | **Dribbble**  | HTML scraping of shot search            | best-effort |
 | **Behance**   | HTML scraping of project search         | best-effort |
+| **Awwwards**  | HTML scraping of website search         | best-effort |
 
 Each source is a self-contained module implementing a single `Source` trait
 (`src-tauri/src/sources/`), so adding a new one — or fixing one that a site
