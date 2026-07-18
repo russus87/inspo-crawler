@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inspo Crawler</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">◧</span>
+        <span>Inspo&nbsp;Crawler</span>
+      </div>
+
+      <form id="search-form" class="search">
+        <input
+          id="query"
+          type="text"
+          placeholder="Search a theme — e.g. dashboard, fintech app, dark landing page…"
+          autocomplete="off"
+          autofocus
+        />
+        <button id="search-btn" type="submit">Search</button>
+      </form>
+
+      <div class="folder">
+        <button id="folder-btn" type="button" title="Choose destination folder">📁 Folder</button>
+        <span id="folder-path" class="folder-path" title="">not set</span>
+      </div>
+    </header>
+
+    <div id="sources" class="sources"></div>
+
+    <main id="grid" class="grid"></main>
+
+    <div id="status" class="status"></div>
+
+    <footer id="actionbar" class="actionbar hidden">
+      <label class="selall">
+        <input type="checkbox" id="select-all" />
+        <span>Select all</span>
+      </label>
+      <span id="selcount" class="selcount">0 selected</span>
+      <div class="spacer"></div>
+      <button id="loadmore" type="button" class="ghost">Load more</button>
+      <button id="save-selected" type="button" class="primary" disabled>Save selected</button>
+    </footer>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="main.js"></script>
+  </body>
+</html>

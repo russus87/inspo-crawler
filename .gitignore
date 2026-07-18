@@ -1,0 +1,18 @@
+# Rust / Cargo
+/src-tauri/target/
+**/*.rs.bk
+
+# Tauri generated
+/src-tauri/gen/schemas/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Node (not used, but just in case)
+node_modules/
