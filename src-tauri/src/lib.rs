@@ -12,6 +12,38 @@ use tauri_plugin_opener::OpenerExt;
 const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 \
     (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
+/// Debug helper (used by `examples/probe.rs`): run every source for page 1 and
+/// page 2 and report how many NEW items page 2 adds — i.e. whether "Load more"
+/// has anything to append for that source.
+pub async fn probe_sources(query: &str) {
+    let client = Client::builder()
+        .user_agent(USER_AGENT)
+        .gzip(true)
+        .brotli(true)
+        .timeout(std::time::Duration::from_secs(25))
+        .build()
+        .unwrap();
+    for src in sources::all() {
+        let p1 = src.search(&client, query, 1).await;
+        let p2 = src.search(&client, query, 2).await;
+        match (p1, p2) {
+            (Ok(a), Ok(b)) => {
+                let ids: std::collections::HashSet<_> = a.iter().map(|i| i.id.clone()).collect();
+                let fresh = b.iter().filter(|i| !ids.contains(&i.id)).count();
+                println!(
+                    "{:10} p1={:3}  p2={:3}  new_on_p2={:3}",
+                    src.id(),
+                    a.len(),
+                    b.len(),
+                    fresh
+                );
+            }
+            (Err(e), _) => println!("{:10} ERROR page1: {e}", src.id()),
+            (_, Err(e)) => println!("{:10} ERROR page2: {e}", src.id()),
+        }
+    }
+}
+
 /// Shared application state: a single reused HTTP client.
 struct AppState {
     client: Client,

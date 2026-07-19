@@ -7,38 +7,20 @@ use serde_json::{json, Value};
 /// Pinterest via its internal `BaseSearchResource` endpoint (unauthenticated).
 pub struct Pinterest;
 
-/// Pick a thumbnail and a full-size url out of a Pinterest `images` object,
-/// which looks like `{ "236x": {"url": ...}, "orig": {"url": ...}, ... }`.
-fn pick_images(images: &Value) -> Option<(String, String)> {
-    let get = |k: &str| images.pointer(&format!("/{k}/url")).and_then(Value::as_str);
-    let thumb = get("474x").or_else(|| get("236x")).or_else(|| get("736x"));
-    let full = get("orig").or_else(|| get("736x")).or(thumb);
-    match (thumb, full) {
-        (Some(t), Some(f)) => Some((t.to_string(), f.to_string())),
-        _ => None,
-    }
-}
-
-#[async_trait]
-impl Source for Pinterest {
-    fn id(&self) -> &'static str {
-        "pinterest"
-    }
-    fn label(&self) -> &'static str {
-        "Pinterest"
-    }
-    fn referer(&self) -> &'static str {
-        "https://www.pinterest.com/"
-    }
-
-    async fn search(&self, client: &Client, query: &str, _page: u32) -> anyhow::Result<Vec<InspoItem>> {
-        // Pinterest paginates with opaque bookmarks rather than page numbers,
-        // so we fetch the first page of results (25 pins).
-        let data = json!({
-            "options": { "query": query, "scope": "pins", "page_size": 25 },
-            "context": {}
-        })
-        .to_string();
+impl Pinterest {
+    /// Fetch one batch of results, optionally continuing from `bookmark`.
+    /// Returns the raw result array and the next-page bookmark (if any).
+    async fn fetch_page(
+        &self,
+        client: &Client,
+        query: &str,
+        bookmark: Option<&str>,
+    ) -> anyhow::Result<(Vec<Value>, Option<String>)> {
+        let mut options = json!({ "query": query, "scope": "pins", "page_size": 25 });
+        if let Some(b) = bookmark {
+            options["bookmarks"] = json!([b]);
+        }
+        let data = json!({ "options": options, "context": {} }).to_string();
 
         let source_url = format!("/search/pins/?q={}", urlencoding::encode(query));
         let url = format!(
@@ -64,6 +46,54 @@ impl Source for Pinterest {
             .and_then(Value::as_array)
             .cloned()
             .unwrap_or_default();
+        let next = v
+            .pointer("/resource_response/bookmark")
+            .and_then(Value::as_str)
+            .map(|s| s.to_string());
+        Ok((results, next))
+    }
+}
+
+/// Pick a thumbnail and a full-size url out of a Pinterest `images` object,
+/// which looks like `{ "236x": {"url": ...}, "orig": {"url": ...}, ... }`.
+fn pick_images(images: &Value) -> Option<(String, String)> {
+    let get = |k: &str| images.pointer(&format!("/{k}/url")).and_then(Value::as_str);
+    let thumb = get("474x").or_else(|| get("236x")).or_else(|| get("736x"));
+    let full = get("orig").or_else(|| get("736x")).or(thumb);
+    match (thumb, full) {
+        (Some(t), Some(f)) => Some((t.to_string(), f.to_string())),
+        _ => None,
+    }
+}
+
+#[async_trait]
+impl Source for Pinterest {
+    fn id(&self) -> &'static str {
+        "pinterest"
+    }
+    fn label(&self) -> &'static str {
+        "Pinterest"
+    }
+    fn referer(&self) -> &'static str {
+        "https://www.pinterest.com/"
+    }
+
+    async fn search(&self, client: &Client, query: &str, page: u32) -> anyhow::Result<Vec<InspoItem>> {
+        // Pinterest paginates with opaque "bookmarks", not page numbers: each
+        // response carries a bookmark that must be replayed to fetch the next
+        // batch. Sources are stateless per invoke, so to reach page N we chain
+        // N sequential requests, keeping only the last batch's results.
+        let mut bookmark: Option<String> = None;
+        let mut results = Vec::new();
+        for _ in 0..page.max(1) {
+            let (batch, next) = self.fetch_page(client, query, bookmark.as_deref()).await?;
+            results = batch;
+            match next {
+                // A "-end-" bookmark (or none) means no further pages exist.
+                Some(b) if b != "-end-" => bookmark = Some(b),
+                _ => break,
+            }
+        }
 
         let mut out = Vec::new();
         for r in &results {
