@@ -1,0 +1,38 @@
+# PKGBUILD per Inspo Crawler — genera un pacchetto Arch .pkg.tar.zst.
+# Pensato per la CI: la versione viene iniettata da build.yml (sed su pkgver).
+# Compila dal sorgente gia' presente nel repo e impacchetta il binario.
+pkgname=inspo-crawler
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Hunt UI/design inspiration across Pinterest, Unsplash, Are.na, Dribbble & Behance and save images in bulk (Rust + Tauri)"
+arch=('x86_64')
+url="https://github.com/russus87/inspo-crawler"
+license=('MIT')
+# Dipendenze a runtime: webkit per la finestra Tauri, gtk3 per la UI nativa.
+depends=('webkit2gtk-4.1' 'gtk3')
+makedepends=('rust' 'cargo')
+options=('!strip' '!lto')
+
+# Il PKGBUILD sta in packaging/, quindi la root del repo e' la cartella superiore.
+_repo() { echo "$startdir/.."; }
+
+build() {
+    cd "$(_repo)"
+    # Frontend statico (frontendDist punta a ../src): niente npm da eseguire.
+    # tauri-build incorpora gli asset a compile time, quindi basta cargo build.
+    cargo build --release --manifest-path src-tauri/Cargo.toml
+}
+
+package() {
+    cd "$(_repo)"
+    # src-tauri e' un crate standalone (nessun workspace root): il binario
+    # finisce in src-tauri/target/release/.
+    install -Dm755 "src-tauri/target/release/inspo-crawler" \
+        "$pkgdir/usr/bin/inspo-crawler"
+    install -Dm644 "packaging/inspo-crawler.desktop" \
+        "$pkgdir/usr/share/applications/inspo-crawler.desktop"
+    install -Dm644 "src-tauri/icons/128x128.png" \
+        "$pkgdir/usr/share/icons/hicolor/128x128/apps/inspo-crawler.png"
+    install -Dm644 "src-tauri/icons/icon.png" \
+        "$pkgdir/usr/share/icons/hicolor/512x512/apps/inspo-crawler.png"
+}

@@ -96,7 +96,8 @@ jobs:
             src-tauri/target/*/release/bundle/dmg/*.dmg
             src-tauri/target/*/release/bundle/macos/*.app.tar.gz
 
-  # Arch Linux native binary (built inside an Arch container).
+  # Arch Linux: native pacman package (.pkg.tar.zst) via makepkg, so
+  # russus_launcher can install it with `pacman -U`.
   arch:
     needs: check
     runs-on: ubuntu-latest
@@ -105,27 +106,25 @@ jobs:
       - name: Install deps
         run: |
           pacman -Syu --noconfirm --needed base-devel git curl wget file \
-            openssl webkit2gtk-4.1 gtk3 libappindicator-gtk3 librsvg rustup nodejs
+            openssl webkit2gtk-4.1 gtk3 libappindicator-gtk3 librsvg rust sudo
       - uses: actions/checkout@v4
-      - name: Rust toolchain
-        run: rustup default stable
-      - name: Install Tauri CLI
+      - name: Inject version from tag into PKGBUILD
         run: |
-          curl -L --proto '=https' --tlsv1.2 -sSf \
-            https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-          cargo binstall -y tauri-cli || cargo install tauri-cli --version '^2.0' --locked
-      - name: Build (binary only)
-        run: cargo tauri build --no-bundle
-      - name: Package binary
+          VER="${GITHUB_REF_NAME#v}"          # v0.1.0 -> 0.1.0; on branch pushes stays as-is
+          case "$VER" in v*|main|"") VER=0.0.0 ;; esac
+          sed -i "s/^pkgver=.*/pkgver=${VER}/" packaging/PKGBUILD
+          echo "Package version: ${VER}"
+      - name: Build package (makepkg can't run as root)
         run: |
-          mkdir -p dist
-          cp src-tauri/target/release/inspo-crawler dist/
-          tar -czf dist/inspo-crawler-arch-x86_64.tar.gz -C src-tauri/target/release inspo-crawler
+          useradd -m builder
+          chown -R builder:builder .
+          sudo -u builder bash -c 'cd packaging && makepkg -f --noconfirm --nodeps'
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: inspo-crawler-arch
-          path: dist/*
+          if-no-files-found: warn
+          path: packaging/*.pkg.tar.zst
 
   # Attach every built artifact to a GitHub Release when a tag is pushed.
   release:

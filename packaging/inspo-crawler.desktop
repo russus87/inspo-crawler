@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Inspo Crawler
+Comment=Hunt UI/design inspiration across Pinterest, Unsplash, Are.na, Dribbble & Behance and save images in bulk
+Exec=inspo-crawler
+Icon=inspo-crawler
+Terminal=false
+Categories=Graphics;Design;Utility;
+Keywords=design;inspiration;ui;pinterest;dribbble;behance;unsplash;arena;images;
