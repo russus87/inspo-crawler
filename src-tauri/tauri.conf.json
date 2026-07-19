@@ -27,7 +27,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "category": "Graphics",
+    "category": "Graphics and Design",
     "shortDescription": "Design inspiration crawler",
     "longDescription": "Search UI and design inspiration across Pinterest, Dribbble, Behance, Unsplash and Are.na, then save the images you like — one by one or in bulk.",
     "icon": [
