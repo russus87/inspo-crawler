@@ -70,7 +70,10 @@ jobs:
         uses: cargo-bins/cargo-binstall@main
 
       - name: Install Tauri CLI
-        run: cargo binstall -y tauri-cli || cargo install tauri-cli --version '^2.0' --locked
+        # --force: rust-cache restores cargo's "installed" metadata but not the
+        # cargo-tauri binary, so binstall would otherwise skip and leave
+        # `cargo tauri` missing.
+        run: cargo binstall -y --force tauri-cli || cargo install tauri-cli --version '^2.0' --locked --force
 
       - name: Build
         run: cargo tauri build ${{ matrix.args }}
